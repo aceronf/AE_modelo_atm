@@ -30,6 +30,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
+from figuras import plot_lgtauR, plot_T, plot_Pe, plot_Pe_Pg, plot_Prad_Pg
+
 ### Utilizar LaTeX en las figuras:
 #############################################################################################
 plt.rc('text', usetex=True)
@@ -62,6 +64,14 @@ plt.rcParams.update({
 #############################################################################################
 t_5000 = "t5000.dat"
 t_8000 = "t8000.dat"
+
+plot_params = {
+     "label":[r"$T_{\mathrm{eff}}=5000 \, \unit{\kelvin}$", 
+              r"$T_{\mathrm{eff}}=8000 \, \unit{\kelvin}$" ],
+     "color":["red", "blue"],
+     "linestyle":["-", "--"],
+                }
+
 
 ### Función para leer las tablas:
 #############################################################################################
@@ -99,14 +109,32 @@ if __name__ == "__main__":
             shutil.rmtree(results_dir)    
     os.makedirs(results_dir)
 
-    ### Plot de lgTauR frente a la profundidad:
+    ### 1) Plot de lgTauR frente a la profundidad:
     #########################################################################################
     fig1, ax1 = plt.subplots(figsize=(15, 8))
-    ax1.plot(t_5000_table["Depth"].value, t_5000_table["lgTauR"].value, color="purple")
-    ax1.plot(t_8000_table["Depth"].value, t_8000_table["lgTauR"].value, color="orange")
+    plot_lgtauR((t_5000_table, t_8000_table), params=plot_params, axis=ax1, figure=fig1,
+                save_path=os.path.join(results_dir,"lgTauR_R.pdf"))
+
+    ### 2) Plot T, Pe, Pe/Pg y Prad/Pg frente a lgTauR
+    #########################################################################################
+    fig2_1, ax2_1 = plt.subplots(figsize=(15, 8))
+    plot_T((t_5000_table, t_8000_table), params=plot_params, axis=ax2_1, figure=fig2_1,
+                save_path=os.path.join(results_dir,"T_lgTauR.pdf"))
+    
+
+    fig2_2, ax2_2 = plt.subplots(figsize=(15, 8))
+    plot_Pe((t_5000_table, t_8000_table), params=plot_params, axis=ax2_2, figure=fig2_2,
+                save_path=os.path.join(results_dir,"Pe_lgTauR.pdf"))
+    
+    fig2_3, ax2_3 = plt.subplots(figsize=(15, 8))
+    plot_Pe_Pg((t_5000_table, t_8000_table), params=plot_params, axis=ax2_3, figure=fig2_3,
+                save_path=os.path.join(results_dir,"Pe_Pg_lgTauR.pdf"))
+    
+    fig2_4, ax2_4 = plt.subplots(figsize=(15, 8))
+    plot_Prad_Pg((t_5000_table, t_8000_table), params=plot_params, axis=ax2_4, figure=fig2_4,
+                save_path=os.path.join(results_dir,"Prad_Pg_lgTauR.pdf"))
+
+
+    
+
     plt.show()
-
-
-
-
-
