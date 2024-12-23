@@ -133,8 +133,8 @@ if __name__ == "__main__":
     fig2_4, ax2_4 = plt.subplots(figsize=(15, 8))
     plot_Prad_Pg((t_5000_table, t_8000_table), params=plot_params, axis=ax2_4, figure=fig2_4,
                 save_path=os.path.join(results_dir,"Prad_Pg_lgTauR.pdf"))
-
-
     
+    ### 3) Plot T frente a lgTauR comparando con cuerpo gris
+    #########################################################################################
 
-    plt.show()
+
