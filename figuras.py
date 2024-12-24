@@ -87,12 +87,16 @@ def plot_lgtauR(tablas:tuple, axis, figure, params,
         figure.savefig(save_path, format=im_format, bbox_inches='tight')     
 
 #############################################################################################
-def plot_T(tablas:tuple, axis, figure, params, 
+def plot_T(tablas:tuple, axis, figure, params, grey_atmos=False,
                 save_path=None, show=False, im_format="pdf"):
 
     for i, tabla in enumerate(tablas):
         axis.plot(tabla["lgTauR"], tabla["T"], color = params["color"][i], 
                   linestyle = params["linestyle"][i], linewidth = 2, label=params["label"][i])
+        if grey_atmos:
+            T_grey = (3/4*(params["Teff"][i]**4)*(10**tabla["lgTauR"].value+2/3))**(1/4)
+            axis.plot(tabla["lgTauR"], T_grey, color = "black", 
+                  linestyle = params["linestyle"][i], linewidth = 2, alpha=0.3)
 
     axis.set_xlim(min([tabla["lgTauR"][0].value for tabla in tablas]),
                    max([tabla["lgTauR"][-1].value for tabla in tablas]))

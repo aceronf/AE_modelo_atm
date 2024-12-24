@@ -70,6 +70,7 @@ plot_params = {
               r"$T_{\mathrm{eff}}=8000 \, \unit{\kelvin}$" ],
      "color":["red", "blue"],
      "linestyle":["-", "--"],
+     "Teff":[5000, 8000]
                 }
 
 
@@ -136,5 +137,8 @@ if __name__ == "__main__":
     
     ### 3) Plot T frente a lgTauR comparando con cuerpo gris
     #########################################################################################
+    fig3, ax3 = plt.subplots(figsize=(15, 8))
+    plot_T((t_5000_table, t_8000_table), params=plot_params, axis=ax3, figure=fig3, grey_atmos=True,
+                save_path=os.path.join(results_dir,"T_lgTauR_gris.pdf"))
 
 
