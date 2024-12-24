@@ -29,34 +29,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from matplotlib.ticker import FormatStrFormatter
+import matplotlib.font_manager as font_manager
 
-### Utilizar LaTeX en las figuras:
-#############################################################################################
-plt.rc('text', usetex=True)
-plt.rc('font', family='sans-serif') 
-plt.rc('font', size=16)  
-
-plt.rcParams['text.latex.preamble'] = r'''
-            \usepackage{siunitx}
-            \sisetup{
-              detect-family,
-              separate-uncertainty=true,
-              output-decimal-marker={.},
-              exponent-product=\cdot,
-              inter-unit-product=\cdot,
-            }
-            \DeclareSIUnit{\cts}{cts}
-            \DeclareSIUnit{\year}{yr}
-            \DeclareSIUnit{\dyn}{dyn}
-            \DeclareSIUnit{\mag}{mag}
-            \usepackage{sansmath}  % Allows sans-serif in math mode
-            \sansmath
-            '''
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "sans-serif",
-    "font.sans-serif": "Computer Modern Serif",
-})
 
 #############################################################################################
 def plot_lgtauR(tablas:tuple, axis, figure, params, 
@@ -74,17 +49,26 @@ def plot_lgtauR(tablas:tuple, axis, figure, params,
     axis.axhline(0, color="black",linestyle="dashdot", linewidth=1, 
         zorder=0, alpha=0.9)
     
-    axis.set_xlabel(r"$r$ [$\unit{\kilo\meter}$]", fontsize=30)
+    axis.set_xlabel(r"$r\ [\mathrm{\unit{\kilo\meter}}]$", fontsize=30)
     axis.set_ylabel(r"$\log_{10}(\tau_R)$", fontsize=30)
     
     axis.tick_params(axis='both', which='major', labelsize=24)
     axis.legend(fontsize=24)
-
-    if show:
-        plt.show()
     
     if save_path is not None:
-        figure.savefig(save_path, format=im_format, bbox_inches='tight')     
+        
+        # Guardando los archivos en pdf o png desde la terminal.
+        # Por defecto en pdf, para guardar en png usar -png
+        if '-png' in sys.argv:
+            plt.savefig(save_path+'.png',format='png', dpi=1000, bbox_inches='tight')   
+            
+        else:
+            plt.savefig(save_path+'.pdf',format='pdf', dpi=1000, bbox_inches='tight')   
+        
+    # Cerrando el plot
+    plt.close()
+    
+    
 
 #############################################################################################
 def plot_T(tablas:tuple, axis, figure, params, grey_atmos=False,
@@ -113,8 +97,18 @@ def plot_T(tablas:tuple, axis, figure, params, grey_atmos=False,
     if show:
         plt.show()
     if save_path is not None:
-        figure.savefig(save_path, format=im_format, bbox_inches='tight')    
-
+        
+        # Guardando los archivos en pdf o png desde la terminal.
+        # Por defecto en pdf, para guardar en png usar -png
+        if '-png' in sys.argv:
+            plt.savefig(save_path+'.png',format='png', dpi=1000, bbox_inches='tight')   
+            
+        else:
+            plt.savefig(save_path+'.pdf',format='pdf', dpi=1000, bbox_inches='tight')   
+        
+    # Cerrando el plot
+    plt.close()
+        
 #############################################################################################
 def plot_Pe(tablas:tuple, axis, figure, params, 
                 save_path=None, show=False, im_format="pdf"):

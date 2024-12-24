@@ -30,7 +30,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-from figuras import plot_lgtauR, plot_T, plot_Pe, plot_Pe_Pg, plot_Prad_Pg
+from figuras_v import plot_gen
 
 ### Utilizar LaTeX en las figuras:
 #############################################################################################
@@ -114,35 +114,122 @@ if __name__ == "__main__":
     if os.path.exists(results_dir_path):
             shutil.rmtree(results_dir_path)    
     os.makedirs(results_dir_path)
-
+    
     ### 1) Plot de lgTauR frente a la profundidad:
     #########################################################################################
-    fig1, ax1 = plt.subplots(figsize=(15, 8))
-    plot_lgtauR((t_5000_table, t_8000_table), params=plot_params, axis=ax1, figure=fig1,
-                save_path=os.path.join(results_dir_path,"lgTauR_R"))
-        
+    x_column = "Depth" # Opcional pasarlo así o dentro del for
+    y_column = "lgTauR" # Opcional pasarlo así o dentro del for
+    
+    x_data = []
+    y_data = []
+    
+    # Obteniendo los datos a representar
+    for table in table_list:
+        x_data.append(table[x_column].to(u.km))
+        y_data.append(table[y_column])
+    
+    # Representando los datos
+    plot_gen(x_data,y_data,
+             label_list=plot_params["label"],
+             fig_name=os.path.join(results_dir_path,f"{plot_number}_lgTauR_R"),
+             x_axis_label = r"$r\ [\mathrm{\unit{\kilo\meter}}]$",
+             y_axis_label = r"$\log_{10}(\tau_R)$",
+             guide_lines=[True,(0,0)])
+    
+    # Aumentando el número identificador del plot
+    plot_number += 1
+    
+    # Olvidando variables para evitar errores
+    del x_column,y_column,x_data,y_data
+    
     
     ### 2) Plot T, Pe, Pe/Pg y Prad/Pg frente a lgTauR
     #########################################################################################
-    fig2_1, ax2_1 = plt.subplots(figsize=(15, 8))
-    plot_T((t_5000_table, t_8000_table), params=plot_params, axis=ax2_1, figure=fig2_1,
-                save_path=os.path.join(results_dir_path,"T_lgTauR"))
+    
+    # Valor fijo para x
+    x_column = "lgTauR"
+    
+    # Magnitudes a plotear en y
+    mag_list = ['T','Pe','Pe/Pg','Prad/Pg']
+    mag_list_fig_names = ['T','Pe','Pe_Pg','Prad_Pg']
+
+    # Eje logaritmico para cada magnitud
+    mag_log_y = [False,True,True,True]
+    mag_yax_lab = [r"$T\ [\unit{\kelvin}$]",
+                   r"$P_{\mathrm{e}}\ [\unit{\dyn\cdot cm^{-2}}$]",
+                   r"$P_{\mathrm{e}}/P_{\mathrm{g}}$",
+                   r"$P_{\mathrm{rad}}/P_{\mathrm{g}}$",
+    ]
+    
+    # Plotear para cada magnitud
+    for mag_pos,mag in enumerate(mag_list):
+        
+        x_data = []
+        y_data = []
+        
+        # Para las dos tablas
+        for table in table_list:
+            x_data.append(table[x_column])
+            
+            # Si se tiene un cociente se identifica como tal
+            if '/' in mag:
+                mag1 = mag.split('/')[0]
+                mag2 = mag.split('/')[1]
                 
-    fig2_2, ax2_2 = plt.subplots(figsize=(15, 8))
-    plot_Pe((t_5000_table, t_8000_table), params=plot_params, axis=ax2_2, figure=fig2_2,
-                save_path=os.path.join(results_dir_path,"Pe_lgTauR.pdf"))
+                y_data.append(table[mag1].value/table[mag2].value)
+            
+            else:
+                y_data.append(table[mag])
     
-    fig2_3, ax2_3 = plt.subplots(figsize=(15, 8))
-    plot_Pe_Pg((t_5000_table, t_8000_table), params=plot_params, axis=ax2_3, figure=fig2_3,
-                save_path=os.path.join(results_dir_path,"Pe_Pg_lgTauR.pdf"))
-    
-    fig2_4, ax2_4 = plt.subplots(figsize=(15, 8))
-    plot_Prad_Pg((t_5000_table, t_8000_table), params=plot_params, axis=ax2_4, figure=fig2_4,
-                save_path=os.path.join(results_dir_path,"Prad_Pg_lgTauR.pdf"))
-    
-    
+        # Representando los datos
+        fig_name = os.path.join(results_dir_path,f"{plot_number}_{mag_list_fig_names[mag_pos]}_{x_column}")
+        
+        plot_gen(x_data,y_data,
+             label_list=plot_params["label"],
+             fig_name=fig_name,
+             x_axis_label = r"$\log_{10}(\tau_R)$",
+             y_axis_label= mag_yax_lab[mag_pos],
+             y_log_scale=mag_log_y[mag_pos],
+             y_ticks_dec=0,
+             guide_lines=[True,(0,None)])
+        
+        # Aumentando el número identificador del plot
+        plot_number += 1
+  
+  
+  
     ### 3) Plot T frente a lgTauR comparando con cuerpo gris
     #########################################################################################
-    fig3, ax3 = plt.subplots(figsize=(15, 8))
-    plot_T((t_5000_table, t_8000_table), params=plot_params, axis=ax3, figure=fig3, grey_atmos=True,
-                save_path=os.path.join(results_dir_path,"T_lgTauR_gris"))
+    
+    x_column = "lgTauR" 
+    y_column = "T" 
+    
+    x_data = []
+    y_data = []
+    
+    # Obteniendo los datos a representar
+    for table_pos,table in enumerate(table_list):
+        x_data.append(table[x_column])
+        y_data.append(table[y_column])
+        
+        # Calculando para la atmósfera gris
+        x_data.append(table[x_column])
+        y_data_grey = (3/4*(plot_params["Teff"][table_pos]**4)*(10**table[x_column].value+2/3))**(1/4)
+        y_data.append(y_data_grey)
+
+    
+    # Representando los datos
+    plot_gen(x_data,y_data,
+             label_list=[plot_params["label"][0]]+['']+[plot_params["label"][1]]+[''],
+             fig_name=os.path.join(results_dir_path,f"{plot_number}_T_lgTauR_gris"),
+             x_axis_label = r"$\log_{10}(\tau_R)$",
+             y_axis_label = r"$T\ [\unit{\kelvin}$]",
+             line_color = ['red','grey','dodgerblue','grey'],
+             line_style = ['-','-','--','--'],
+             guide_lines=[True,(0,None)])
+    
+    # Aumentando el número identificador del plot
+    plot_number += 1
+    
+    # Olvidando variables para evitar errores
+    del x_column,y_column,x_data,y_data
