@@ -16,7 +16,7 @@ import sys
 import pdb
 
 import numpy as np
-from astropy.constants import M_sun, R_sun, G, R, h, m_e, m_p, c, sigma_sb, k_B
+from astropy.constants import Ryd, h, m_e, m_p, c ,k_B
 from astropy.io.ascii import read
 from astropy import units as u
 from astropy.table import QTable
@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
 from figuras import plot_lgtauR, plot_T, plot_Pe, plot_Pe_Pg, plot_Prad_Pg
+from poblaciones import poblaciones
 
 ### Utilizar LaTeX en las figuras:
 #############################################################################################
@@ -141,4 +142,32 @@ if __name__ == "__main__":
     plot_T((t_5000_table, t_8000_table), params=plot_params, axis=ax3, figure=fig3, grey_atmos=True,
                 save_path=os.path.join(results_dir,"T_lgTauR_gris.pdf"))
 
+
+    ### 4) Poblaciones en tau=0.5 y tau=5
+    #########################################################################################
+
+    # Líneas de las tablas en las que tau=0.5 y tau=5:
+    tau_05 = np.abs(10**t_5000_table["lgTauR"] - 0.5).argmin() 
+    tau_5 = np.abs(10**t_5000_table["lgTauR"] - 5).argmin() 
+
+    # Tablas en las que guardar las poblaciones calculadas:
+    poblaciones_t_5000 = QTable(
+                                names=("Ne", "HI", "HII", "Hmenos", "HI_n1", "HI_n2", "HI_n3"),
+                                units=[u.cm**-3] * 7 ) # Set all columns to have units of m**-3   
+    poblaciones_t_8000 = QTable(
+                                names=("Ne", "HI", "HII", "Hmenos", "HI_n1", "HI_n2", "HI_n3"),
+                                units=[u.cm**-3] * 7)  # Set all columns to have units of m**-3 
+    for row in t_5000_table:
+         T = row["T"]
+         Pe = row["Pe"]
+         poblaciones_t_5000.add_row(poblaciones(Pe, T))
+    poblaciones_t_5000.add_column(t_5000_table["lgTauR"], index=0)
+    poblaciones_t_5000[[tau_05, tau_5]].write(os.path.join(results_dir,"poblaciones_5000.dat"), format="ascii.fixed_width", overwrite=True)
+
+    for row in t_8000_table:
+         T = row["T"]
+         Pe = row["Pe"]
+         poblaciones_t_8000.add_row(poblaciones(Pe, T))
+    poblaciones_t_8000.add_column(t_8000_table["lgTauR"], index=0)
+    poblaciones_t_8000[[tau_05, tau_5]].write(os.path.join(results_dir,"poblaciones_8000.dat"), format="ascii.fixed_width", overwrite=True)
 
