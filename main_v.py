@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
 from figuras_v import plot_gen
+from poblaciones import poblaciones
 
 ### Utilizar LaTeX en las figuras:
 #############################################################################################
@@ -78,11 +79,6 @@ def read_table(model_name:str):
 # Primera parte de plotear
 def plotear():
 
-    ### Ficheros con los modelos:
-    #############################################################################################
-    t_5000 = "t5000.dat"
-    t_8000 = "t8000.dat"
-
     plot_params = {
         "label":[r"$T_{\mathrm{eff}}=5000\ \mathrm{\unit{\kelvin}}$", 
                 r"$T_{\mathrm{eff}}=8000\ \mathrm{\unit{\kelvin}}$" ],
@@ -92,25 +88,6 @@ def plotear():
                     }
     
     plot_number = 1
-    
-    ### Se leen los datos y se convierten a tablas de astropy
-    #########################################################################################
-    t_5000_table = read_table(t_5000)
-    t_8000_table = read_table(t_8000)
-    table_list = [t_5000_table,t_8000_table]
-    #print(t_5000_table)
-
-    ### Se crea un directorio donde guardar los resultados:
-    #########################################################################################
-    
-    cwd = os.getcwd() # Obtenemos el cwd
-    results_dir_name = "resultados"
-    results_dir_path = f"{cwd}/{results_dir_name}" # Path asoluto a los resultados
-    
-    # Creamos la carpeta con los plots:
-    if os.path.exists(results_dir_path):
-            shutil.rmtree(results_dir_path)    
-    os.makedirs(results_dir_path)
     
     ### 1) Plot de lgTauR frente a la profundidad:
     #########################################################################################
@@ -268,62 +245,71 @@ def boltzmann_distribution(T,g_HI,chi_HI):
     populations = [(g/U) * np.exp(-chi / (k_b * T)) for g, chi in zip(g_HI, chi_HI)]
     
     return populations
-
-# Opacidades
-def opacity_H_minus():
-    
-    pass
-
-def opacity_HI():
-    
-    pass
-
-def opacity_electrons():
-    
-    pass
-
-def poblaciones():
-    
-    print('Calculando las poblaciones')
-    
-
-
-    # Parámetros físicos
-    T = 5000  # Temperatura en Kelvin
-    n_e = 1e21  # Densidad electrónica (1/cm^3)
-    wl_range = np.linspace(800e-8, 20000e-8, 1000)  # Longitudes de onda en cm
-
-    # Energías de excitación (subir de nivel)
-    # https://astro.unl.edu/naap/hydrogen/transitions.html
-    chi_HI = np.array([13.6, 10.2, 1.9]) * eV_to_erg  # Energía de excitación de HI en tres niveles (erg)
-    # https://en.wikipedia.org/wiki/Hydrogen_anion
-    chi_H_minus = 0.754 * eV_to_erg # Energía de excitación de H- (erg)
-    
-    # Degeneración gj = 2n**2
-    g_HI = [2, 8, 18]  # Degeneración de los niveles de HI
-    # Para el H- no tenemos degeneración porque el primer nivel está completo
-    
-    # Cálculo de poblaciones
-    n_H_minus = saha_equation(T, n_e, chi_H_minus)  # Población H-
-    n_HI_levels = boltzmann_distribution(T,g_HI,chi_HI)  # Población relativa de niveles de HI
     
 
 
 ### Programa principal:
 #############################################################################################
 if __name__ == "__main__":
+    
+    ### Ficheros con los modelos:
+    #############################################################################################
+    t_5000 = "t5000.dat"
+    t_8000 = "t8000.dat"
+    
+    ### Se leen los datos y se convierten a tablas de astropy
+    #########################################################################################
+    t_5000_table = read_table(t_5000)
+    t_8000_table = read_table(t_8000)
+    table_list = [t_5000_table,t_8000_table]
+    #print(t_5000_table)
+
+    ### Se crea un directorio donde guardar los resultados:
+    #########################################################################################
+    
+    cwd = os.getcwd() # Obtenemos el cwd
+    results_dir_name = "resultados"
+    results_dir_path = f"{cwd}/{results_dir_name}" # Path asoluto a los resultados
+    
+    # Creamos la carpeta con los plots:
+    if os.path.exists(results_dir_path):
+            shutil.rmtree(results_dir_path)    
+    os.makedirs(results_dir_path)
 
     plotear()
     
-    # Constantes fundamentales
-    # https://ned.ipac.caltech.edu/level5/Glossary/lang_formulae.html
-    h_cgs = 6.626196e-27  # Constante de Planck (erg s)
-    c = 2.997924562e10       # Velocidad de la luz (cm/s)
-    k_b = 1.380649e-16  # Constante de Boltzmann (erg/K)
-    mass_e = 9.109558e-28  # Masa del electrón (g)
-    eV_to_erg = 1.60184e-12 # Factor para pasar de eV a erg
-    
-    poblaciones()
+    ### 4) Poblaciones en tau=0.5 y tau=5
+    #########################################################################################
+
+    # Líneas de las tablas en las que tau=0.5 y tau=5:
+    tau_05 = np.abs(10**t_5000_table["lgTauR"] - 1).argmin() 
+    tau_5 = np.abs(10**t_5000_table["lgTauR"] - 10).argmin() 
+
+    # Tablas en las que guardar las poblaciones calculadas:
+    poblaciones_t_5000 = QTable(
+                                names=("Ne", "HI", "HII", "Hmenos", "HI_n1", "HI_n2", "HI_n3"),
+                                units=[u.cm**-3] * 7 ) # Set all columns to have units of m**-3   
+    poblaciones_t_8000 = QTable(
+                                names=("Ne", "HI", "HII", "Hmenos", "HI_n1", "HI_n2", "HI_n3"),
+                                units=[u.cm**-3] * 7)  # Set all columns to have units of m**-3 
+    for row in t_5000_table:
+        T = row["T"]
+        Pe = row["Pe"]
+        poblaciones_t_5000.add_row(poblaciones(Pe, T))
+    poblaciones_t_5000.add_column(t_5000_table["lgTauR"], index=0)
+    column_formats = {col: ".3e" for col in poblaciones_t_5000.colnames[1:]}
+    poblaciones_t_5000[[tau_05, tau_5]].write(os.path.join(results_dir_path,"poblaciones_5000.dat"), format="ascii.fixed_width", overwrite=True,
+                                            formats=column_formats)
+
+
+    for row in t_8000_table:
+        T = row["T"]
+        Pe = row["Pe"]
+        poblaciones_t_8000.add_row(poblaciones(Pe, T))
+    poblaciones_t_8000.add_column(t_8000_table["lgTauR"], index=0)
+    column_formats = {col: ".3e" for col in poblaciones_t_8000.colnames[1:]}
+    poblaciones_t_8000[[tau_05, tau_5]].write(os.path.join(results_dir_path,"poblaciones_8000.dat"), format="ascii.fixed_width", overwrite=True,
+                                            formats=column_formats)
 
     
     
