@@ -99,7 +99,7 @@ def poblaciones(Pe, T):
     # Cociente entre HII y HI
     HII_HI = Saha(T, Ne, 1, U_HI, 13.6*u.eV)
     # Cociente entre HI y el ion H-
-    HI_Hmenos = Saha(T, Ne, 1, 1, 0.755*u.eV)
+    HI_Hmenos = Saha(T, Ne, U_HI, 1, 0.755*u.eV)
     # Cociente entre HII y el ion H-
     HII_Hmenos = HII_HI*HI_Hmenos
     # Densidad del ion H- por conservacion de carga:

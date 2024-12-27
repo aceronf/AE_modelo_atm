@@ -147,8 +147,8 @@ if __name__ == "__main__":
     #########################################################################################
 
     # Líneas de las tablas en las que tau=0.5 y tau=5:
-    tau_05 = np.abs(10**t_5000_table["lgTauR"] - 0.5).argmin() 
-    tau_5 = np.abs(10**t_5000_table["lgTauR"] - 5).argmin() 
+    tau_05 = np.abs(10**t_5000_table["lgTauR"] - 1).argmin() 
+    tau_5 = np.abs(10**t_5000_table["lgTauR"] - 10).argmin() 
 
     # Tablas en las que guardar las poblaciones calculadas:
     poblaciones_t_5000 = QTable(
@@ -162,12 +162,17 @@ if __name__ == "__main__":
          Pe = row["Pe"]
          poblaciones_t_5000.add_row(poblaciones(Pe, T))
     poblaciones_t_5000.add_column(t_5000_table["lgTauR"], index=0)
-    poblaciones_t_5000[[tau_05, tau_5]].write(os.path.join(results_dir,"poblaciones_5000.dat"), format="ascii.fixed_width", overwrite=True)
+    column_formats = {col: ".3e" for col in poblaciones_t_5000.colnames[1:]}
+    poblaciones_t_5000[[tau_05, tau_5]].write(os.path.join(results_dir,"poblaciones_5000.dat"), format="ascii.fixed_width", overwrite=True,
+                                              formats=column_formats)
+
 
     for row in t_8000_table:
          T = row["T"]
          Pe = row["Pe"]
          poblaciones_t_8000.add_row(poblaciones(Pe, T))
     poblaciones_t_8000.add_column(t_8000_table["lgTauR"], index=0)
-    poblaciones_t_8000[[tau_05, tau_5]].write(os.path.join(results_dir,"poblaciones_8000.dat"), format="ascii.fixed_width", overwrite=True)
+    column_formats = {col: ".3e" for col in poblaciones_t_8000.colnames[1:]}
+    poblaciones_t_8000[[tau_05, tau_5]].write(os.path.join(results_dir,"poblaciones_8000.dat"), format="ascii.fixed_width", overwrite=True,
+                                              formats=column_formats)
 
