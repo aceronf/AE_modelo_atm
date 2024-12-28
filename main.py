@@ -147,8 +147,8 @@ if __name__ == "__main__":
     #########################################################################################
 
     # Líneas de las tablas en las que tau=0.5 y tau=5:
-    tau_05 = np.abs(10**t_5000_table["lgTauR"] - 1).argmin() 
-    tau_5 = np.abs(10**t_5000_table["lgTauR"] - 10).argmin() 
+    tau_05 = np.abs(10**t_5000_table["lgTauR"] - 0.5).argmin() 
+    tau_5 = np.abs(10**t_5000_table["lgTauR"] - 5).argmin() 
 
     # Tablas en las que guardar las poblaciones calculadas:
     poblaciones_t_5000 = QTable(

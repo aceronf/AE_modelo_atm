@@ -115,3 +115,5 @@ def poblaciones(Pe, T):
     HI_n3 = HI * poblaciones_relativas_HI[2]
 
     return Ne, HI, HII, Hmenos, HI_n1, HI_n2, HI_n3
+
+print((c*h/(3.4*u.eV)).to(u.m))
