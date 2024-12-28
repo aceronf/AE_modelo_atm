@@ -50,12 +50,10 @@ def cross_section_H(T,Z,niveles,wl):
     freq = c / wl
     
     # No sé de donde salen las unidades de sigma
-    sigma_bf = ((2.815e29 * (Z**4 / (niveles**5 * freq ** 3)) * g_bf))
+    # Suponiendo qeu se retorna en cm^2 con las constantes
+    sigma_bf = ((2.815e29 * (Z**4 / (niveles**5 * freq ** 3)) * g_bf))*u.cm**2
     
-    #sigma_cte = ((64*np.pi**4)/(3*np.sqrt(3)))*(e.si**10/(c*h**6))
-    #sigma_bf_mih = sigma_cte * (1/((niveles**5 * freq ** 3)))*g_bf
-    
-    sigma_ff = ((3.7e8 * (Z**2 / (T**(1/2) * freq**3)) * g_ff))
+    sigma_ff = (((3.7e8 * (Z**2 / (T**(1/2) * freq**3)) * g_ff)).value)*u.cm**2
     
     return sigma_bf, sigma_ff
 
@@ -66,14 +64,19 @@ def opacity_H(T,Z,Ne,niv_pop,ion_pop,wl,niveles):
                                          wl=wl,
                                          niveles=niveles_HI)
     
-    freq = c / wl
+    # Esto sale en 1 / s
+    freq = (c / wl)
     
-    exponent = (-(h * freq)/(k_B*T)).to(u.dimensionless_unscaled)
+    # Esto sale adimensional
+    exponent = (-(h * freq)/(k_B*T))
     
-    k_bf = (sigma_bf*niv_pop*(1-np.exp(exponent)))
+    # Pasamos a cgs porque las sigmas estan en cgs
     
-    k_ff = (sigma_ff*Ne*ion_pop*(1-np.exp(exponent)))
+    # Esto queda en s3 / cm
+    k_bf = (sigma_bf*niv_pop.cgs*(1-np.exp(exponent)))
     
+    # Esto queda en 1 / cm4
+    k_ff = (sigma_ff*Ne.cgs*ion_pop.cgs*(1-np.exp(exponent)))    
     
     return k_bf, k_ff
 
@@ -89,33 +92,43 @@ def cross_section_Hmenos(T,wl):
     a5 = -1.395683e-18
     a6 = 2.78701e-23
     
-    wl = wl.value
-    sigma_bf = (a0 + a1*wl + 
-                a2*wl**2 + 
-                a3*wl**3 + 
-                a4*wl**4 + 
-                a5*wl**5 + 
-                a6*wl**6)*10e-18
+    # Longitud de onda tiene que estar en angstroms
+    wl_a = wl.to(u.AA).value
     
-    f0 = -2.2763 -1.6850*np.log10(wl) +0.76661*np.log10(wl)**2 -0.053346*np.log10(wl)**3
-    f1 = +15.2827 -9.2846*np.log10(wl) +1.99381*np.log10(wl)**2 -0.142631*np.log10(wl)**3
-    f2 = -197.789 +190.226*np.log10(wl) -67.9775*np.log10(wl)**2 +10.6913*np.log10(wl)**3 -0.625151*np.log10(wl)**4
+    # Suponiendo qeu se retorna en cm^2 con las constantes
+    sigma_bf = ((a0 + a1*wl_a + 
+                a2*wl_a**2 + 
+                a3*wl_a**3 + 
+                a4*wl_a**4 + 
+                a5*wl_a**5 + 
+                a6*wl_a**6)*10e-18)*u.cm**2
     
+    f0 = -2.2763 -1.6850*np.log10(wl_a) +0.76661*np.log10(wl_a)**2 -0.053346*np.log10(wl_a)**3
+    f1 = +15.2827 -9.2846*np.log10(wl_a) +1.99381*np.log10(wl_a)**2 -0.142631*np.log10(wl_a)**3
+    f2 = -197.789 +190.226*np.log10(wl_a) -67.9775*np.log10(wl_a)**2 +10.6913*np.log10(wl_a)**3 -0.625151*np.log10(wl_a)**4
+    
+    # Adimensional para los logaritmos
     theta = (5040 / T.value)
     
-    sigma_ff = 10e-26*10**(f0+f1*np.log10(theta)+f2*np.log(theta)**2)
+    # Suponiendo qeu se retorna en cm^2 con las constantes
+    sigma_ff = 10e-26*10**(f0+f1*np.log10(theta)+f2*np.log(theta)**2)*u.cm**2
+    
     
     return sigma_bf, sigma_ff
 
 def opacity_Hmenos(Pe,T,wl,HI):
     
+    # En cm**2
     sigma_bf, sigma_ff = cross_section_Hmenos(T,wl)
     
+    # Adimensional
     theta = 5040 / T.value
     
-    k_bf = 4.158e-10 * sigma_bf * Pe * theta**(5/2) * 10**(0.754*theta)
+    # Pasando a sistema cgs sale dyn no 1 / cm
+    k_bf = (4.158e-10 * sigma_bf * Pe.cgs * theta**(5/2) * 10**(0.754*theta)).cgs
     
-    k_ff = Pe * sigma_ff * HI
+    # Pasando a sistema cgs sale Ba / cm (casi)
+    k_ff = (Pe.cgs * sigma_ff.cgs * HI.cgs).cgs
     
     return k_bf, k_ff
 
@@ -123,13 +136,16 @@ def opacity_Hmenos(Pe,T,wl,HI):
 # Opacidad de los electrones
 def opacity_e(Ne):
     
-    k_e = 6.25e-25 * Ne
+    # Pasando a cgs sale  1 / cm3
+    k_e = 6.25e-25 * Ne.cgs
     
     return k_e
 
 def opacidades(Pe,T,Ne,Z,niv_pop,ion_pop,wl):
+    # Todo está en sistema internacional de entrada
     
     # Opacidad para el H
+    #  s3 / cm ----- 1 / cm4
     k_bf_H, k_ff_H = opacity_H(T=T,
                                Z=Z,
                                Ne=Ne,
@@ -139,9 +155,19 @@ def opacidades(Pe,T,Ne,Z,niv_pop,ion_pop,wl):
                                niveles=niveles_HI)
     
     # Opacidad para el H-
+    #  dyn ----- Ba / cm
     k_bf_Hmenos, k_ff_Hmenos = opacity_Hmenos(Pe,T,wl,niv_pop[0])
     
     # Opacidad de los electrones
+    # 1 / cm3
     k_e = opacity_e(Ne)
     
-    return k_bf_H.value, k_ff_H.value, k_bf_Hmenos.value, k_ff_Hmenos.value, round(k_e.value,4)
+    # s3 / cm
+    k_bf_H_sum = np.sum(k_bf_H)
+    
+    k_tot = 0
+
+    # Sin dimensiones porque sino no me dejaba sumarlas
+    k_tot =  np.sum(k_bf_H).value + np.sum(k_ff_H).value + k_bf_Hmenos.value + k_ff_Hmenos.value + k_e.value
+    
+    return k_bf_H.value, k_ff_H.value, k_bf_Hmenos.value, k_ff_Hmenos.value, k_e.value, k_bf_H_sum.value, k_tot
