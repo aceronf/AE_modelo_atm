@@ -15,7 +15,7 @@ import sys
 import pdb
 
 import numpy as np
-from astropy.constants import Ryd, h, m_e, m_p, c ,k_B
+from astropy.constants import Ryd, h, m_e, m_p, c ,k_B, e
 from astropy.io.ascii import read
 from astropy import units as u
 from astropy.table import QTable
@@ -28,20 +28,19 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 niveles_HI = np.array([1,2,3])
 
+# Coefficientes de Gaunt, sección eficaz y opacidad para el HI
+# para sus diferentes niveles
 def gaunt_coeff_H(T,wl,niveles):
     
     # Coeficiente de Gaunt para las transiciones ligado-libre (bound-free): lineas
-    g_bf = 1 - (0.3456/(wl * Ryd)**(1/3))*((wl*Ryd/niveles**2)-(1/2))
-    
+    g_bf = 1 - (0.3456/(wl * Ryd)**(1/3))*(((wl*Ryd)/niveles**2)-(1/2))
+
     # Coeficiente de Gaunt para las transiciones libre-libre (free-free): continuo
     g_ff = 1 + (0.3456/(wl * Ryd)**(1/3))*((wl*k_B*T/(h*c))+(1/2))
 
     # Estos valores son adimensionales
     return g_bf, g_ff
 
-
-# Sección eficaz y opacidad para el HI
-# para sus diferentes niveles
 def cross_section_H(T,Z,niveles,wl):
     
     g_bf, g_ff = gaunt_coeff_H(T=T,wl=wl,niveles=niveles_HI)
@@ -51,9 +50,12 @@ def cross_section_H(T,Z,niveles,wl):
     freq = c / wl
     
     # No sé de donde salen las unidades de sigma
-    sigma_bf = (2.815e29 * (Z**4 / (niveles**5 * freq ** 3)) * g_bf)*u.cm**2/u.s**3
+    sigma_bf = ((2.815e29 * (Z**4 / (niveles**5 * freq ** 3)) * g_bf))
     
-    sigma_ff = 3.7e8 * (Z**2 / T**(1/2) * freq**3) * g_ff
+    #sigma_cte = ((64*np.pi**4)/(3*np.sqrt(3)))*(e.si**10/(c*h**6))
+    #sigma_bf_mih = sigma_cte * (1/((niveles**5 * freq ** 3)))*g_bf
+    
+    sigma_ff = ((3.7e8 * (Z**2 / (T**(1/2) * freq**3)) * g_ff))
     
     return sigma_bf, sigma_ff
 
@@ -68,9 +70,10 @@ def opacity_H(T,Z,Ne,niv_pop,ion_pop,wl,niveles):
     
     exponent = (-(h * freq)/(k_B*T)).to(u.dimensionless_unscaled)
     
-    k_bf = sigma_bf*niv_pop*(1-np.exp(exponent))
+    k_bf = (sigma_bf*niv_pop*(1-np.exp(exponent)))
     
-    k_ff = sigma_ff*Ne*ion_pop*(1-np.exp(exponent))
+    k_ff = (sigma_ff*Ne*ion_pop*(1-np.exp(exponent)))
+    
     
     return k_bf, k_ff
 
@@ -141,4 +144,4 @@ def opacidades(Pe,T,Ne,Z,niv_pop,ion_pop,wl):
     # Opacidad de los electrones
     k_e = opacity_e(Ne)
     
-    return k_bf_H, k_ff_H, k_bf_Hmenos, k_ff_Hmenos, k_e
+    return k_bf_H.value, k_ff_H.value, k_bf_Hmenos.value, k_ff_Hmenos.value, round(k_e.value,4)

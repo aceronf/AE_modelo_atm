@@ -236,6 +236,8 @@ if __name__ == "__main__":
             shutil.rmtree(results_dir_path)    
     os.makedirs(results_dir_path)
 
+    # Informando del proceso que se está llevando a cabo
+    print('\nGenerando los gráficos de los modelos\n')
     plotear()
     
     ### 4) Poblaciones en tau=0.5 y tau=5
@@ -286,18 +288,42 @@ if __name__ == "__main__":
     
     ### 5) Calculo de las opacidades
     #########################################################################################
-    Ne, HI, HII, Hmenos, HI_n1, HI_n2, HI_n3 = poblaciones(Pe, T)
     
-    lambdas = np.array([800e-10,20000e-10])*u.m
-    niv_pop = np.array([HI_n1.value, HI_n2.value, HI_n3.value])/u.m**3
-    ion_pop = np.array([HI.value, HII.value])/u.m**3
+    # Lista de las tablas generadas para guardar las opacidades
+    opacidades_table_list = []
+    
+    # Temperatura de los modelos
     temp = [5000,8000]*u.Kelvin
     
-    for T in temp:
+    # Longitudes de onda en la que se hace el estudio
+    lambdas = (np.array([800,20000])*u.AA).to(u.m)
+    
+    # Estudiando cada modelo de tmeperaturas
+    for T_pos,T in enumerate(temp):
         
+        # Innformamos por pantalla del proceso actual
+        print(f'\nOpacidades para el modelo de {T}')
+        
+        # Creamos una tabla
+        table = QTable(names=("wl","k_e", "k_ff_Hmenos", "k_ff_HI", "k_bf_Hmenos_n1", "k_bf_HI_n1", "k_bf_HI_n2", "k_bf_HI_n3"),
+                        units=['Angstrom', None, None, None, None, None, None, None]
+                        ) # Todas las columnas con unidades de cm**-1  
+        
+        # La añadimos a la lista de tablas
+        opacidades_table_list.append(table)
+        
+        # Calculando poblaciones para cada temperatura
+        Ne, HI, HII, Hmenos, HI_n1, HI_n2, HI_n3 = poblaciones(Pe, T)
+
+        # Agrupando poblaciones de nivles e iones en arrays
+        niv_pop = np.array([HI_n1.value, HI_n2.value, HI_n3.value])/u.m**3
+        ion_pop = np.array([HI.value, HII.value])/u.m**3
+        
+        
+        # Para cada longitud de onda se calculan las opacidades
         for wl in lambdas:
             
-            print(f'T={T} y wl={wl}')
+            # Calculando las opacidades
             k_bf_H, k_ff_H, k_bf_Hmenos, k_ff_Hmenos, k_e = opacidades(Pe=Pe,
                                                                     T=T,
                                                                     Ne=Ne,
@@ -305,13 +331,40 @@ if __name__ == "__main__":
                                                                     ion_pop=ion_pop,
                                                                     wl=wl,
                                                                     Z=1)
+            
+            # Mostrar los resultados por pantalla si se solicita
+            if '--screen-info' in sys.argv:
+                print(f'T={T} y wl={wl:.2E}')
+                print(f'Opacidad H bf: {k_bf_H}')
+                print(f'Opacidad H ff: {k_ff_H}')
+                print(f'Opacidad H- bf: {k_bf_Hmenos:.2E}')
+                print(f'Opacidad H- ff: {k_ff_Hmenos}')
+                print(f'Opacidad debido a los electrones: {k_e:.4f}')
+                print()
+            
+            # Añadiendo los datos para cada longitud de onda a las tablas
+            opacidades_table_list[T_pos].add_row((wl.to(u.AA),
+                                                  k_e,
+                                                  k_ff_Hmenos,
+                                                  k_ff_H[0],
+                                                  k_bf_Hmenos,
+                                                  k_bf_H[0],
+                                                  k_bf_H[1],
+                                                  k_bf_H[2]))
         
-            print(f'Opacidad H bf: {k_bf_H}')
-            print(f'Opacidad H ff: {k_ff_H}')
-            print(f'Opacidad H- bf: {k_bf_Hmenos}')
-            print(f'Opacidad H- ff: {k_ff_Hmenos}')
-            print(f'Opacidad debido a los electrones: {k_e:.4f}')
-            print()
+        # Exportando las tablas para cada temperatura
+        column_formats = {col: ".3e" for col in opacidades_table_list[T_pos].colnames[1:]}
+        opacidades_table_list[T_pos].write(os.path.join(results_dir_path,f"opacidades_{int(T.value)}.dat"), 
+                                            format="ascii.fixed_width", 
+                                            overwrite=True,
+                                            formats=column_formats)
+            
+    
+    print('\nEl estudio de poblaciones y opacidades ha finalizado')
+    print('Las gráficas y valores obtenidos se pueden consultar en\n./resultados')
+            
+            
+
 
     
     
