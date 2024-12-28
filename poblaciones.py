@@ -44,13 +44,13 @@ def energias(Z, niveles):
     energias
         Array con las energías en eV
     """
+    
     lambdas = np.zeros(len(niveles))*u.m
     energias = np.zeros(len(niveles))*u.eV
     for i, n in enumerate(niveles):
         lambdas[i] = (Ryd*Z**2/n**2)**(-1)
         energias[i] = -(h*c/lambdas[i]).to(u.eV)
-
-    #print(energias)
+        
     return energias
 
 #############################################################################################
@@ -84,6 +84,7 @@ def Boltzmann_HI(T, niveles):
 
 #############################################################################################
 def Saha(T, Ne, U1, U0, I):
+
     exponent = (-I/(k_B*T)).to(u.dimensionless_unscaled)
     N1_N0 = ((2*np.pi*m_e*k_B*T)/(h**2))**(3/2) * 2 * U1/U0 * 1/Ne * np.exp(exponent)
 
@@ -95,12 +96,15 @@ def poblaciones(Pe, T):
     # Densidad de electrones:
     Ne = (Pe/(k_B*T)).to(u.m**(-3))
     # Función de partición del HI:
+    # Con boltzmann sacamos la distribución de niveles
     U_HI, poblaciones_relativas_HI = Boltzmann_HI(T, niveles_HI)
     # Cociente entre HII y HI
+    # Con Saha hacemos el más ionizado respecto del menos
     HII_HI = Saha(T, Ne, 1, U_HI, 13.6*u.eV)
     # Cociente entre HI y el ion H-
     HI_Hmenos = Saha(T, Ne, U_HI, 1, 0.755*u.eV)
     # Cociente entre HII y el ion H-
+    # El HII tiene 0 electrones y el H- 2 eleectrones
     HII_Hmenos = HII_HI*HI_Hmenos
     # Densidad del ion H- por conservacion de carga:
     Hmenos = Ne/(HII_Hmenos-1)
@@ -113,5 +117,28 @@ def poblaciones(Pe, T):
     HI_n1 = HI * poblaciones_relativas_HI[0]
     HI_n2 = HI * poblaciones_relativas_HI[1]
     HI_n3 = HI * poblaciones_relativas_HI[2]
+    
+    if '--screen-info' in sys.argv:
+        
+        print(f'Pe={Pe},T={T}')
+        
+        print('Mediante Saha')
+        print(f'HII/HI: {HII_HI:.2f} atomos mas de HII que de HI')
+        print(f'HI/H-:  {HI_Hmenos:.2f} atomos mas de HI que de H-')
+        print(f'HII/H-: {HII_Hmenos:.2f} atomos mas de HII que de H-')
+        
+        print(f'Conociendo Ne={Ne:.2E} (gas ideal)')
+        print(f'HI total: {HI:.2E} atomos')
+        print(f'HII total:{HII:.2E} atomos')
+        print(f'H- total: {Hmenos:.2E} atomos')
+        
+        print('Mediante Boltzmann')
+        print(f'Poblaciones relativas HI, n=0, n=1, n=2:\n{poblaciones_relativas_HI}')
+        print(f'HI n=1: {HI_n1:.2E} atomos')
+        print(f'HI n=2: {HI_n2:.2E} atomos')
+        print(f'HI n=2: {HI_n3:.2E} atomos')
+        
+        print()
 
     return Ne, HI, HII, Hmenos, HI_n1, HI_n2, HI_n3
+

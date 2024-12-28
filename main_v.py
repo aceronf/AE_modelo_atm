@@ -34,6 +34,7 @@ import matplotlib.lines as mlines
 
 from figuras_v import plot_gen
 from poblaciones import poblaciones
+from opacidades import opacidades
 
 ### Utilizar LaTeX en las figuras:
 #############################################################################################
@@ -207,47 +208,6 @@ def plotear():
     plot_number += 1
     
 
-
-# Función de partición
-def partition_function(T,g_HI,chi_HI):
-    """
-    Calcula la función de partición basada en la temperatura y los niveles de energía.
-    """
-    
-    # Tema 3 diapositiva 8
-    return sum(g * np.exp(-chi / (k_b * T)) for g, chi in zip(g_HI, chi_HI))
-
-def saha_equation(T, n_e, chi):
-    """
-    Aplica la ecuación de Saha para calcular la densidad de átomos ionizados.
-    
-    Args:
-        T (float): Temperatura en Kelvin.
-        n_e (float): Densidad electrónica (1/m^3).
-        ionization_energy (float): Energía de ionización en eV.
-        
-    Returns:
-        float: Densidad de partículas ionizadas.
-    """
-    
-    # https://www.britannica.com/science/Saha-equation
-    nj_nj1 = (2/n_e) * np.exp(-chi / (k_b * T)) * (2 * np.pi * mass_e * k_b * T / h_cgs**2)**(3/2)
-    
-    return nj_nj1
-
-def boltzmann_distribution(T,g_HI,chi_HI):
-    """
-    Calcula las fracciones de población relativa en los niveles de HI según Boltzmann.
-    """
-    
-    # Tema 3, diapositiva 8
-    U = partition_function(T,g_HI,chi_HI)    
-    populations = [(g/U) * np.exp(-chi / (k_b * T)) for g, chi in zip(g_HI, chi_HI)]
-    
-    return populations
-    
-
-
 ### Programa principal:
 #############################################################################################
 if __name__ == "__main__":
@@ -282,8 +242,12 @@ if __name__ == "__main__":
     #########################################################################################
 
     # Líneas de las tablas en las que tau=0.5 y tau=5:
+    # Estas tau indican las condiciones de Pe y T que se van a utilizar
     tau_05 = np.abs(10**t_5000_table["lgTauR"] - 1).argmin() 
     tau_5 = np.abs(10**t_5000_table["lgTauR"] - 10).argmin() 
+    
+    # Victor: No entiendo lo de las lineas
+    #pdb.set_trace()
 
     # Tablas en las que guardar las poblaciones calculadas:
     poblaciones_t_5000 = QTable(
@@ -292,24 +256,62 @@ if __name__ == "__main__":
     poblaciones_t_8000 = QTable(
                                 names=("Ne", "HI", "HII", "Hmenos", "HI_n1", "HI_n2", "HI_n3"),
                                 units=[u.cm**-3] * 7)  # Set all columns to have units of m**-3 
+    
+    print('\nPoblaciones para el modelo de 5000 K')
     for row in t_5000_table:
         T = row["T"]
         Pe = row["Pe"]
         poblaciones_t_5000.add_row(poblaciones(Pe, T))
+        
     poblaciones_t_5000.add_column(t_5000_table["lgTauR"], index=0)
     column_formats = {col: ".3e" for col in poblaciones_t_5000.colnames[1:]}
-    poblaciones_t_5000[[tau_05, tau_5]].write(os.path.join(results_dir_path,"poblaciones_5000.dat"), format="ascii.fixed_width", overwrite=True,
-                                            formats=column_formats)
+    poblaciones_t_5000[[tau_05, tau_5]].write(os.path.join(results_dir_path,"poblaciones_5000.dat"),
+                                              format="ascii.fixed_width", 
+                                              overwrite=True,
+                                              formats=column_formats)
 
-
+    print('\nPoblaciones para el modelo de 8000 K')
     for row in t_8000_table:
         T = row["T"]
         Pe = row["Pe"]
         poblaciones_t_8000.add_row(poblaciones(Pe, T))
+        
     poblaciones_t_8000.add_column(t_8000_table["lgTauR"], index=0)
     column_formats = {col: ".3e" for col in poblaciones_t_8000.colnames[1:]}
-    poblaciones_t_8000[[tau_05, tau_5]].write(os.path.join(results_dir_path,"poblaciones_8000.dat"), format="ascii.fixed_width", overwrite=True,
-                                            formats=column_formats)
+    poblaciones_t_8000[[tau_05, tau_5]].write(os.path.join(results_dir_path,"poblaciones_8000.dat"), 
+                                              format="ascii.fixed_width", 
+                                              overwrite=True,
+                                              formats=column_formats)
+    
+    
+    ### 5) Calculo de las opacidades
+    #########################################################################################
+    Ne, HI, HII, Hmenos, HI_n1, HI_n2, HI_n3 = poblaciones(Pe, T)
+    
+    lambdas = np.array([800e-10,20000e-10])*u.m
+    niv_pop = np.array([HI_n1.value, HI_n2.value, HI_n3.value])/u.m**3
+    ion_pop = np.array([HI.value, HII.value])/u.m**3
+    temp = [5000,8000]*u.Kelvin
+    
+    for T in temp:
+        
+        for wl in lambdas:
+            
+            print(f'T={T} y wl={wl}')
+            k_bf_H, k_ff_H, k_bf_Hmenos, k_ff_Hmenos, k_e = opacidades(Pe=Pe,
+                                                                    T=T,
+                                                                    Ne=Ne,
+                                                                    niv_pop=niv_pop,
+                                                                    ion_pop=ion_pop,
+                                                                    wl=wl,
+                                                                    Z=1)
+        
+            print(f'Opacidad H bf: {k_bf_H}')
+            print(f'Opacidad H ff: {k_ff_H}')
+            print(f'Opacidad H- bf: {k_bf_Hmenos}')
+            print(f'Opacidad H- ff: {k_ff_Hmenos}')
+            print(f'Opacidad debido a los electrones: {k_e:.4f}')
+            print()
 
     
     
