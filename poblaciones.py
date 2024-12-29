@@ -51,7 +51,7 @@ def energias(Z, niveles):
         lambdas[i] = (Ryd*Z**2/n**2)**(-1)
         energias[i] = -(h*c/lambdas[i]).to(u.eV)
         
-    return energias
+    return energias, lambdas
 
 #############################################################################################
 def deg_HI(niveles):
@@ -73,7 +73,7 @@ def deg_HI(niveles):
 def Boltzmann_HI(T, niveles):
 
     g_HI = deg_HI(niveles)  # Degeneración de los niveles de HI
-    E_HI = energias(1,niveles) # Energías de los niveles de HI
+    E_HI = energias(1,niveles)[0] # Energías de los niveles de HI
     chi_HI = E_HI - E_HI[0] # Energías de excitación
     # Función de partición U para el hidrógeno neutro:
     U = sum(g * np.exp(-chi / (k_B * T)) for g, chi in zip(g_HI, chi_HI)).value
