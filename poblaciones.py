@@ -15,7 +15,7 @@ import sys
 import pdb
 
 import numpy as np
-from astropy.constants import Ryd, h, m_e, m_p, c ,k_B
+from astropy.constants import Ryd, h, m_e, m_p, c ,k_B, e
 from astropy.io.ascii import read
 from astropy import units as u
 from astropy.table import QTable
