@@ -42,7 +42,7 @@ from opacidades import opacidades
 #############################################################################################
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
-plt.rc('font', size=20)  
+plt.rc('font', size=26)  
 
 plt.rcParams['text.latex.preamble'] = r'''
             \usepackage{siunitx}
@@ -118,7 +118,8 @@ def plotear():
                 fig_name=os.path.join(results_dir_path,f"{plot_number}_lgTauR_R"),
                 x_axis_label = r"$r\ [\mathrm{\unit{\kilo\meter}}]$",
                 x_ticks_dec = 0,
-                y_axis_label = r"$\log_{10}(\tau_R)$",
+                y_axis_label = r"$\log(\tau_\mathrm{R})$",
+                aspect_ratio=[1,3],
                 guide_lines=[True,(0,0)])
     
     # Aumentando el número identificador del plot
@@ -178,11 +179,12 @@ def plotear():
             plot_gen(x_data,y_data,
                 label_list=plot_params["label"],
                 fig_name=fig_name,
-                x_axis_label = r"$\log_{10}(\tau_R)$",
+                x_axis_label = r"$\log(\tau_\mathrm{R})$",
                 y_axis_label= mag_yax_lab[mag_pos],
                 y_log_scale=mag_log_y[mag_pos],
                 y_ticks_dec=0,
                 legend_pos=leg_pos_list[mag_pos],
+                aspect_ratio=[1,3],
                 guide_lines=[True,(0,None)])
         
         # Aumentando el número identificador del plot
@@ -213,11 +215,12 @@ def plotear():
         plot_gen(x_data,y_data,
                 label_list=[plot_params["label"][0]]+['']+[plot_params["label"][1]]+[''],
                 fig_name=os.path.join(results_dir_path,f"{plot_number}_T_lgTauR_gris"),
-                x_axis_label = r"$\log_{10}(\tau_R)$",
+                x_axis_label = r"$\log(\tau_\mathrm{R})$",
                 y_axis_label = r"$T\ [\unit{\kelvin}$]",
                 y_ticks_dec = 0,
                 line_color = ['red','grey','dodgerblue','grey'],
                 line_style = ['-','-','--','--'],
+                aspect_ratio=[1,3],
                 guide_lines=[True,(0,None)])
     
     # Aumentando el número identificador del plot
@@ -407,12 +410,15 @@ def opacidades_main(tauR=1,
                     legend_pos='best',
                     leg_col=2,
                     guide_lines=[False,(0,0)],
-                    line_color=["black", "yellow", "red", "darkgreen", "orange", "navy", "blue", "cyan"],
+                    #line_color=["black", "gold", "red", "darkgreen", "orange", "navy", "blue", "cyan"],
+                    line_color=["black", "navy", "red", "lime", "orange", "gold", "blue", "cyan"],
                     anchuras=[2]+[1.3]*7,
                     zorder=[10]+[1]*7,
-                    line_style=["solid", "dashdot", "dotted", "dashed", "dotted", "dashed", "dashed", "dashed"],
+                    #line_style=["solid", "dashdot", "dotted", "dashed", "dotted", "dashed", "dashed", "dashed"],
+                    line_style=["solid", "dotted", "dashdot", "dashed", "dashdot", "dashed", "dashed", "dashed"],
                     y_log_scale=True,
-                    x_log_scale=False)
+                    x_log_scale=False,
+                    aspect_ratio=[1.4,2])
 
     # Plot de las opacidades totales de ambas estrellas
     x_data = [table['wl'].value for table in tablas_opacidad]   
@@ -428,7 +434,8 @@ def opacidades_main(tauR=1,
                     legend_pos='best',
                     guide_lines=[False,(0,0)],
                     y_log_scale=True,
-                    x_log_scale=False)
+                    x_log_scale=False,
+                    aspect_ratio=[1.4,2])
 
 ### Programa principal:
 #############################################################################################

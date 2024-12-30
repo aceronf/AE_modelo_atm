@@ -68,25 +68,30 @@ def plot_gen(x_data=[],
              zorder = None,
              scatter_plot = False,
              point_lab = None,
+             aspect_ratio=[1,2],
              guide_lines = [False,(None,None)]):
     
     # Determinando el tamaño de las figuras
     
     # Cuánto miden de alto
     plot_cols = 1
-    size_factor_cols = 6
+    size_factor_cols = 6*aspect_ratio[0]
     fig_size_cols = size_factor_cols * plot_cols
     
     # Cuánto miden de ancho
     plot_rows = 1
-    size_factor_rows = 6*2
+    size_factor_rows = 6*aspect_ratio[1]
     fig_size_rows = size_factor_rows * plot_rows
 
     # Tamaño de ls figuras
     fig_size_global = (fig_size_rows,fig_size_cols)
+    
+    # Tamaño de la letra de los ejes
+    axis_font_size = 30
 
     # Tamaño de la letra de la leyenda
-    legend_font_size = 20
+    legend_font_size = 26
+    
     
     # Definiendo algunos colores
     if line_color is None:
@@ -151,7 +156,7 @@ def plot_gen(x_data=[],
     ##### Personalizando los ejes    
     
     ### Eje X inferior
-    ax.set_xlabel(f'{x_axis_label}',fontsize=25)
+    ax.set_xlabel(f'{x_axis_label}',fontsize=axis_font_size)
 
     # Si se dan los limites se ponen sino se calculan
     #if x_lim is not None:
@@ -200,7 +205,7 @@ def plot_gen(x_data=[],
 
 
     ### Eje Y izquierdo
-    ax.set_ylabel(f'{y_axis_label}',fontsize=25,labelpad=10)
+    ax.set_ylabel(f'{y_axis_label}',fontsize=axis_font_size,labelpad=10)
     
     # Si se dan los limites se ponen sino se calculan
     #if y_lim is not None:
