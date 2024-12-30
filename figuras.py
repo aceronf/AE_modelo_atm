@@ -60,9 +60,12 @@ def plot_gen(x_data=[],
              y_ticks_dec = 2,
              y_secaxix_ticks = True,
              line_color = None,
+             line_alpha = None,
              line_style = None,
+             anchuras = None,
              mark_style = None,
              mark_size = None,
+             zorder = None,
              scatter_plot = False,
              point_lab = None,
              guide_lines = [False,(None,None)]):
@@ -88,11 +91,22 @@ def plot_gen(x_data=[],
     # Definiendo algunos colores
     if line_color is None:
         line_color = ['red','dodgerblue','darkorange','lime','gold','deeppink','blueviolet','black']
-    
+
+    # Definiendo alpha:
+    if line_alpha is None:
+        line_alpha = [1]*len(x_data)
+    # zorder
+    if zorder is None:
+        zorder = [0]*len(x_data)
+
     # Estilos de linea
     if line_style is None:
         line_style = ['-', '--', '-', '--','-', '--','-', '--','-', '--','-', '--','-', '--']
     
+    # Grosor de linea
+    if anchuras is None:
+        anchuras = [2]*len(x_data)
+
     # Estilos de marcadores de scatter
     if mark_style is None:
         mark_style = ['.', '<', '>', 'v','*']
@@ -101,7 +115,7 @@ def plot_gen(x_data=[],
         mark_size = [20,10,10,10,10,10]
     
     # Informando en la terminal sobre lo que se está ploteando
-    print(f'Creating the plot {fig_name.split("/")[-1]}')
+    print(f'Creando el grafico {fig_name.split("/")[-1]}')
     
     # Creando la figura como un solo subplot con ejes 'ax'
     fig = plt.figure(figsize=fig_size_global)
@@ -119,8 +133,9 @@ def plot_gen(x_data=[],
                  label=f'{label_list[data_pos]}',
                  color=line_color[data_pos],
                  linestyle=line_style[data_pos],
-                 linewidth=2,
-                 zorder=4)
+                 linewidth=anchuras[data_pos],
+                 zorder=zorder[data_pos],
+                 alpha=line_alpha[data_pos])
     
     # Para añadir lineas verticales de referencia
     # Por defecto desactivadas
@@ -139,10 +154,10 @@ def plot_gen(x_data=[],
     ax.set_xlabel(f'{x_axis_label}',fontsize=25)
 
     # Si se dan los limites se ponen sino se calculan
-    if x_lim is not None:
-        ax.set_xticks(np.linspace(x_lim[0], x_lim[1], x_ticks_num))
-    else:
-        ax.set_xticks(np.linspace(np.nanmin(x_data)/con_factor, np.nanmax(x_data)/con_factor, x_ticks_num))
+    #if x_lim is not None:
+        #ax.set_xticks(np.linspace(x_lim[0], x_lim[1], x_ticks_num))
+    #else:
+        #ax.set_xticks(np.linspace(np.nanmin(x_data)/con_factor, np.nanmax(x_data)/con_factor, x_ticks_num))
     
     ax.set_xmargin(0.05)
     ax.minorticks_on()
@@ -188,10 +203,10 @@ def plot_gen(x_data=[],
     ax.set_ylabel(f'{y_axis_label}',fontsize=25,labelpad=10)
     
     # Si se dan los limites se ponen sino se calculan
-    if y_lim is not None:
-        ax.set_yticks(np.linspace(y_lim[0], y_lim[1], y_ticks_num))
-    else:
-        ax.set_yticks(np.linspace(np.nanmin(y_data), np.nanmax(y_data), y_ticks_num))
+    #if y_lim is not None:
+        #ax.set_yticks(np.linspace(y_lim[0], y_lim[1], y_ticks_num))
+    #else:
+        #ax.set_yticks(np.linspace(np.nanmin(y_data), np.nanmax(y_data), y_ticks_num))
     
     
     ax.set_ymargin(0.1)
