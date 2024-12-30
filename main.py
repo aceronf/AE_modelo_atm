@@ -32,7 +32,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-from figuras_v import plot_gen
+from figuras import plot_gen
 from poblaciones import poblaciones, energias
 from opacidades import opacidades
 
