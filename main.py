@@ -117,6 +117,7 @@ def plotear():
                 label_list=plot_params["label"],
                 fig_name=os.path.join(results_dir_path,f"{plot_number}_lgTauR_R"),
                 x_axis_label = r"$r\ [\mathrm{\unit{\kilo\meter}}]$",
+                x_ticks_dec = 0,
                 y_axis_label = r"$\log_{10}(\tau_R)$",
                 guide_lines=[True,(0,0)])
     
