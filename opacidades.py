@@ -110,7 +110,7 @@ def cross_section_Hmenos(T,wl):
                 a3*wl_a**3 + 
                 a4*wl_a**4 + 
                 a5*wl_a**5 + 
-                a6*wl_a**6)*1e-18)*u.cm/u.dyn
+                a6*wl_a**6)*1e-18)*u.cm**2 # Unidades de cm**2 / ion de H-
     
     f0 = -2.2763 -1.6850*np.log10(wl_a) +0.76661*np.log10(wl_a)**2 -0.053346*np.log10(wl_a)**3
     f1 = +15.2827 -9.2846*np.log10(wl_a) +1.99381*np.log10(wl_a)**2 -0.142631*np.log10(wl_a)**3
@@ -120,7 +120,7 @@ def cross_section_Hmenos(T,wl):
     theta = (5040 / T.value)
     
     # Suponiendo qeu se retorna en cm^2 con las constantes
-    sigma_ff = 1e-26*10**(f0+f1*np.log10(theta)+f2*np.log(theta)**2)*u.cm**4/u.dyn
+    sigma_ff = 1e-26*10**(f0+f1*np.log10(theta)+f2*np.log10(theta)**2)*u.cm**2 # Unidades de cm**2 / ion de H-
     
     
     return sigma_bf, sigma_ff
@@ -134,10 +134,13 @@ def opacity_Hmenos(Pe,T,wl,HI):
     theta = 5040 / T.value
     
     # cm⁻1
-    k_bf = (4.158e-10 * sigma_bf.cgs * Pe.cgs * theta**(5/2) * 10**(0.754*theta))
+    if wl.to(u.AA) > 16220*u.AA:
+        k_bf = 0 / u.cm
+    else:
+        k_bf = (4.158e-10 *u.cm**2/u.dyn * sigma_bf.cgs * Pe.cgs * theta**(5/2) * 10**(0.754*theta) * HI.cgs)
     
     # cm⁻1
-    k_ff = (Pe.cgs * sigma_ff.cgs * HI.cgs)
+    k_ff = (Pe.cgs * sigma_ff.cgs * HI.cgs *u.cm**2/u.dyn)
     
     return k_bf.to(u.cm**(-1)), k_ff.to(u.cm**(-1))
 
