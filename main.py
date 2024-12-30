@@ -85,14 +85,15 @@ def search_line(mag,value,tabla):
     return line
 
 # Primera parte de plotear
-plot_params = {
+def plotear():
+
+    plot_params = {
         "label":[r"$T_{\mathrm{eff}}=5000\ \mathrm{\unit{\kelvin}}$", 
                 r"$T_{\mathrm{eff}}=8000\ \mathrm{\unit{\kelvin}}$" ],
         "color":["red", "blue"],
         "linestyle":["-", "--"],
         "Teff":[5000, 8000]
                     }
-def plotear():
     
     plot_number = 1
     
@@ -259,17 +260,21 @@ def poblaciones_main():
     
     
 
-def opacidades_main(tauR=1,
+def opacidades_main(temperature=None,
                     lambdas=None,
                     niveles=None,
+                    tauR=1,
+                    k_tot=False,
                     plot_k_tot = True,
                     table_name='opacidades',
                     table_export=True):
     
     ### 5) Calculo de las opacidades a tau=1 para los cantos
     #########################################################################################
-    tablas_opacidad = []
-
+    
+    # Lista de las tablas generadas para guardar las opacidades
+    opacidades_table_list = []
+    
     if lambdas == None:
         
         if niveles == None:
@@ -282,17 +287,18 @@ def opacidades_main(tauR=1,
             
             # Longitudes de onda en la que se hace el estudio    
             # Para las longitudes de onda de ionización
-            wl_energias = energias(1,niveles)[0]
-            wl_io = ((h*c) / -wl_energias).to(u.AA).value
+            niveles_HI = np.array([1,2,3])
+            wl_energias = energias(1,niveles_HI)
+            wl_io = ((h*c) / -wl_energias).to(u.AA)
             
             # Seleccionamos un rango alrededor de la longitud
             # de onda de ionización
             wl_cantos = []
-            wl_cantos_rango = 1e-3
+            wl_cantos_rango = 100 # A
             for wl in wl_io:
-                wl_cantos.append(wl*(1-wl_cantos_rango))
-                #wl_cantos.append(wl.value)
-                wl_cantos.append(wl*(1+wl_cantos_rango))
+                wl_cantos.append(int(wl.value-wl_cantos_rango))
+                wl_cantos.append(int(wl.value))
+                wl_cantos.append(int(wl.value+wl_cantos_rango))
                 
             lambdas = (np.array(wl_cantos)*u.AA).to(u.m)
         
@@ -300,50 +306,68 @@ def opacidades_main(tauR=1,
         
         lambdas = ((lambdas)*u.AA).to(u.m)
         
-    # Estudiando cada modelo de tmeperaturas
-    for model_index, model_table in enumerate(table_list):
+
+    if temperature == None:
         
-        # Innformamos por pantalla del proceso actual
-        print(f'\nOpacidades para el modelo de Teff={plot_params["Teff"][model_index]} K')
-        print(f'Generando tabla: {table_name+"_"+str(plot_params["Teff"][model_index])}')
+        print('Necesario proporcionar una temperatura')
         
+    else:
         
-        # Creamos una tabla
-        table = QTable(names=("wl","k_e", "k_ff_Hmenos", 
-                                "k_ff_HI", "k_bf_Hmenos_n1", "k_bf_HI_n1", 
-                                "k_bf_HI_n2", "k_bf_HI_n3","k_bf_HI_sum","k_tot"),
+        # Temperatura de los modelos
+        temp = np.array(temperature)*u.Kelvin
+
+        # Estudiando cada modelo de tmeperaturas
+        for T_pos,T in enumerate(temp):
+            
+            # Innformamos por pantalla del proceso actual
+            print(f'\nOpacidades para el modelo de {T}')
+            print(f'Generando tabla: {table_name}')
+        
+            if k_tot == False:
+                # Creamos una tabla
+                table = QTable(names=("wl","k_e", "k_ff_Hmenos", 
+                                    "k_ff_HI", "k_bf_Hmenos_n1", "k_bf_HI_n1", 
+                                    "k_bf_HI_n2", "k_bf_HI_n3","k_bf_HI_sum"),
                                 units=['Angstrom',None, None, 
                                     None, None, None,
-                                    None, None, None, None]
+                                    None, None, None]
                                 )
             
-        # Opteniendo la Pe a tau=1
-        tau_index = search_line("lgTauR",tauR,model_table)
-        Pe = (model_table["Pe"][tau_index]).si
-        # Obteniendo la T a tau=1
-        T = (model_table["T"][tau_index]).si
+            else:
+                # Creamos una tabla
+                table = QTable(names=("wl","k_tot"),
+                                units=['Angstrom',None]
+                                )
+                
+            # La añadimos a la lista de tablas
+            opacidades_table_list.append(table)
             
-        # Calculando poblaciones para cada temperatura
-        # Todas las poblaciones en 1/m**3
-        Ne, HI, HII, Hmenos, HI_n1, HI_n2, HI_n3 = poblaciones(Pe, T)
-
-        # Agrupando poblaciones de niveles de HI en un array
-        niv_pop = u.Quantity([HI_n1, HI_n2, HI_n3])
+            # Opteniendo la Pe a tau=1 para cada modelo
+            tau = search_line("lgTauR",tauR,table_list[T_pos])
             
-        # Para cada longitud de onda se calculan las opacidades
-        # Longitudes de onda en metros
-        for wl in lambdas:
+            # Pe en sistema internacional
+            Pe = (table_list[T_pos]["Pe"][tau]).si
+            
+            # Calculando poblaciones para cada temperatura
+            # Todas las poblaciones en 1/m**3
+            Ne, HI, HII, Hmenos, HI_n1, HI_n2, HI_n3 = poblaciones(Pe, T)
 
-            # Calculando las opacidades
-            # Todas las magnitudes esán en el sistema internacional
-            k_bf_H, k_ff_H, k_bf_Hmenos, k_ff_Hmenos, k_e, k_bf_H_sum, k_tot_val = opacidades(Pe=Pe,
+            # Agrupando poblaciones de nivles e iones en arrays
+            niv_pop = np.array([HI_n1.value, HI_n2.value, HI_n3.value])/u.m**3
+            ion_pop = np.array([HI.value, HII.value])/u.m**3
+            
+            # Para cada longitud de onda se calculan las opacidades
+            # Longitudes de onda en metros
+            for wl in lambdas:
+
+                # Calculando las opacidades
+                # Todas las magnitudes esán en el sistema internacional
+                k_bf_H, k_ff_H, k_bf_Hmenos, k_ff_Hmenos, k_e, k_bf_H_sum, k_tot_val = opacidades(Pe=Pe,
                                                                         T=T,Ne=Ne,niv_pop=niv_pop,
-                                                                        HI_pop=HI,
-                                                                        HII_pop=HII,
-                                                                        wl=wl,Z=1)
+                                                                        ion_pop=ion_pop,wl=wl,Z=1)
                             
-            # Mostrar los resultados por pantalla si se solicita
-            if '--screen-info' in sys.argv:
+                # Mostrar los resultados por pantalla si se solicita
+                if '--screen-info' in sys.argv:
                     print(f'T={T} y wl={wl:.2E}')
                     print(f'Opacidad H bf: {k_bf_H}')
                     print(f'Opacidad H ff: {k_ff_H}')
@@ -351,72 +375,47 @@ def opacidades_main(tauR=1,
                     print(f'Opacidad H- ff: {k_ff_Hmenos}')
                     print(f'Opacidad debido a los electrones: {k_e:.4f}')
                     print()
-              
-            # Añadiendo los datos para cada longitud de onda a las tablas
-            table.add_row(((wl.to(u.AA)),
+                
+
+                if k_tot == False:
+                    
+                    # Añadiendo los datos para cada longitud de onda a las tablas
+                    opacidades_table_list[T_pos].add_row(((wl.to(u.AA)),
                                                         k_e,
                                                         k_ff_Hmenos,
-                                                        k_ff_H,
+                                                        k_ff_H[0],
                                                         k_bf_Hmenos,
                                                         k_bf_H[0],
                                                         k_bf_H[1],
                                                         k_bf_H[2],
-                                                        k_bf_H_sum,
-                                                        k_tot_val))
+                                                        k_bf_H_sum))
+                
+                else:
+                    # Añadiendo los datos para cada longitud de onda a las tablas
+                    opacidades_table_list[T_pos].add_row(((wl.to(u.AA)),k_tot_val))
                     
-        if table_export == True:
-            # Exportando las tablas para cada temperatura
-            column_formats = {col: ".3e" for col in table.colnames[1:]}
-            table_filename = f"{table_name}"+"_"+f"{str(plot_params["Teff"][model_index])}"+".dat"
-            table.write(os.path.join(results_dir_path,table_filename), 
+            if table_export == True:
+                # Exportando las tablas para cada temperatura
+                column_formats = {col: ".3e" for col in opacidades_table_list[T_pos].colnames[1:]}
+                opacidades_table_list[T_pos].write(os.path.join(results_dir_path,f"{table_name}_{int(T.value)}.dat"), 
                                                     format="ascii.fixed_width", 
                                                     overwrite=True,
                                                     formats=column_formats)
+    
 
-        tablas_opacidad.append(table)
-
-        if plot_k_tot == True:
+            if k_tot == True and plot_k_tot == True:
+        
+                x_data = [table['wl'].value]
+                y_data = [table['k_tot']]
             
-            x_data = [table['wl'].value]*8
-            y_data = [table['k_tot'], table['k_e'], table['k_ff_Hmenos'], table['k_ff_HI'], 
-                      table['k_bf_Hmenos_n1'], table['k_bf_HI_n1'], table['k_bf_HI_n2'], table['k_bf_HI_n3']]
-
-            plot_gen(x_data=x_data,y_data=y_data,
-                    label_list=[r"Total",
-                                r"Dispersión de $e^-$",
-                                r"f-f, H$^-$",
-                                r"f-f, HI",
-                                r"b-f, H$^-$",
-                                r"b-f, HI, $n=1$",
-                                r"b-f, HI, $n=2$",
-                                r"b-f, HI, $n=3$"],
-                    fig_name=os.path.join(results_dir_path,f"opacidad_desglosada_{plot_params['Teff'][model_index]}"),
-                    x_axis_label = r"$\lambda \, [\mathrm{\unit{\angstrom}}]$",
-                    y_axis_label = r"$\kappa \, [\mathrm{cm^{-1}}]$",
-                    legend_pos='best',
-                    leg_col=2,
-                    guide_lines=[False,(0,0)],
-                    line_color=["black", "yellow", "red", "darkgreen", "orange", "navy", "blue", "cyan"],
-                    anchuras=[2]+[1.3]*7,
-                    zorder=[10]+[1]*7,
-                    line_style=["solid", "dashdot", "dotted", "dashed", "dotted", "dashed", "dashed", "dashed"],
-                    y_log_scale=True,
-                    x_log_scale=True)
-
-    # Plot de las opacidades totales de ambas estrellas
-    x_data = [table['wl'].value for table in tablas_opacidad]   
-    y_data = [table['k_tot'] for table in tablas_opacidad]
-
-    plot_gen(x_data,y_data,
-                    label_list=[r"$T_{\mathrm{eff}}$"+ rf"$= {plot_params['Teff'][0]}$"+ r"$\unit{\kelvin}$",
-                                r"$T_{\mathrm{eff}}$"+ rf"$= {plot_params['Teff'][1]}$"+ r"$\unit{\kelvin}$"],
-                    fig_name=os.path.join(results_dir_path,f"opacidad_total"),
-                    x_axis_label = r"$\lambda [\mathrm{\unit{\angstrom}}]$",
-                    y_axis_label = r"$\kappa_{\mathrm{tot}} [\mathrm{cm^{-1}}]$",
-                    legend_pos='best',
-                    guide_lines=[False,(0,0)],
-                    y_log_scale=True,
-                    x_log_scale=True)
+                plot_gen(x_data,y_data,
+                    label_list=[f'T = {int(T.value)}\ K'],
+                    fig_name=os.path.join(results_dir_path,f"opacidad_{int(T.value)}"),
+                    x_axis_label = r"$Longitud\ de\ onda\ [\mathrm{\unit{\angstrom}}]$",
+                    y_axis_label = r"$Opacidad\ total\ [\mathrm{cm^{-1}}]$",
+                    legend_pos='lower left',
+                    guide_lines=[False,(0,0)])
+                
 
 ### Programa principal:
 #############################################################################################
@@ -455,15 +454,28 @@ if __name__ == "__main__":
     poblaciones_main()
     
     ### 5) Calculo de las opacidades
-    opacidades_main(niveles=[1,2,3],
+    opacidades_main(temperature=[5000,8000],
+                    niveles=[1,2,3],
                     tauR=1,
+                    k_tot=False,
                     table_name='opacidades_tabla2')
-                    
-    opacidades_main(lambdas=list(np.arange(500,20010,10)),
+    
+    opacidades_main(temperature=[5000,8000],
+                    lambdas=[1216,1026,6562],
                     tauR=1,
+                    k_tot=True,
+                    plot_k_tot=False,
+                    table_name='opacidades_tabla3')
+    
+    
+    opacidades_main(temperature=[5000,8000],
+                    lambdas=list(np.arange(500,20010,10)),
+                    tauR=1,
+                    k_tot=True,
                     plot_k_tot=True,
                     table_name='opacidades_rango',
                     table_export=True)
-                    
+    
+    
     print('\nEl estudio de poblaciones y opacidades ha finalizado')
     print('Las gráficas y valores obtenidos se pueden consultar en\n./resultados')
